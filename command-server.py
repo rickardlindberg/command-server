@@ -71,8 +71,8 @@ class ProgramArguments:
 
     Test real version:
 
-    >>> ProgramArguments().get()
-    ['--test']
+    >>> ProgramArguments().get() == sys.argv[1:]
+    True
     """
 
     @staticmethod
@@ -151,9 +151,4 @@ class SysNull:
         self.argv = [None]+arguments
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--test"]:
-        import doctest
-        doctest.testmod()
-        print("ok")
-    else:
-        CommandServerApp().run()
+    CommandServerApp().run()
