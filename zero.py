@@ -3,6 +3,7 @@
 import doctest
 import subprocess
 import sys
+import unittest
 
 class ZeroApp:
 
@@ -15,24 +16,33 @@ class ZeroApp:
     LINE => 'I am a tool to support zero friction development.'
     EXIT => 1
 
-    I run selftest when called with build argument:
+    I run all tests when called with build argument:
 
     >>> ZeroApp.run_in_test_mode(args=['build'])
-    LINE => 'selftest'
-    LINE => 'command-server'
+    DOCTEST_MODULE => 'zero'
+    DOCTEST_MODULE => 'command-server'
+    TEST_RUN => None
+
+    >>> ZeroApp.run_in_test_mode(args=['build'], test_successful=False)
+    DOCTEST_MODULE => 'zero'
+    DOCTEST_MODULE => 'command-server'
+    TEST_RUN => None
+    EXIT => 1
 
     >>> isinstance(ZeroApp(), ZeroApp)
     True
     """
 
     @staticmethod
-    def run_in_test_mode(args=[]):
+    def run_in_test_mode(args=[], test_successful=True):
         events = EventCollector()
         terminal = Terminal.create_null()
         terminal.register_event_listener(events)
+        test_runner = TestRunner.create_null(successful=test_successful)
+        test_runner.register_event_listener(events)
         app = ZeroApp(
             args=Args.create_null(args),
-            doctest_runner=DoctestRunner.create_null(terminal=terminal),
+            test_runner=test_runner,
             terminal=terminal
         )
         try:
@@ -41,16 +51,17 @@ class ZeroApp:
             events.notify("EXIT", e.code)
         return events
 
-    def __init__(self, args=None, doctest_runner=None, terminal=None):
+    def __init__(self, args=None, test_runner=None, terminal=None):
         self.args = args or Args()
-        self.doctest_runner = doctest_runner or DoctestRunner()
+        self.test_runner = test_runner or TestRunner()
         self.terminal = terminal or Terminal()
 
     def run(self):
         if self.args.get() == ["build"]:
-            self.doctest_runner.testmod()
-            __import__("command-server")
-            self.doctest_runner.testmod(sys.modules["command-server"])
+            self.test_runner.add_doctest_module("zero")
+            self.test_runner.add_doctest_module("command-server")
+            if not self.test_runner.run():
+                sys.exit(1)
         else:
             self.terminal.print_line("I am a tool to support zero friction development.")
             sys.exit(1)
@@ -151,34 +162,39 @@ class Args:
     def get(self):
         return self.sys.argv[1:]
 
-class DoctestRunner:
+class TestRunner(Observable):
 
     """
-    I am an infrastructure wrapper for Python's doctest module.
+    I am an infrastructure wrapper for Python's test modules.
 
-    >>> DoctestRunner.create_null(Terminal()).testmod()
-
-    >>> isinstance(DoctestRunner(), DoctestRunner)
+    >>> events = EventCollector()
+    >>> runner = TestRunner.create_null()
+    >>> runner.register_event_listener(events)
+    >>> runner.add_doctest_module("zero")
+    >>> runner.run()
     True
-
-    TODO: exit on failure
-    TODO: handle return value from testmod
+    >>> events
+    DOCTEST_MODULE => 'zero'
+    TEST_RUN => None
     """
 
     @staticmethod
-    def create_null(terminal):
-        return DoctestRunner(doctest=NullDoctest(), terminal=terminal)
+    def create_null(successful=True):
+        return TestRunner(unittest=NullUnittest(successful), doctest=NullDoctest())
 
-    def __init__(self, doctest=doctest, terminal=Terminal()):
+    def __init__(self, unittest=unittest, doctest=doctest):
+        Observable.__init__(self)
+        self.unittest = unittest
         self.doctest = doctest
-        self.terminal = terminal
+        self.suite = self.unittest.TestSuite()
 
-    def testmod(self, module=None):
-        if module is None:
-            self.terminal.print_line("selftest")
-        else:
-            self.terminal.print_line("command-server")
-        return self.doctest.testmod(module)
+    def add_doctest_module(self, name):
+        self.notify("DOCTEST_MODULE", name)
+        self.suite.addTest(self.doctest.DocTestSuite(__import__(name)))
+
+    def run(self):
+        self.notify("TEST_RUN", None)
+        return self.unittest.TextTestRunner().run(self.suite).wasSuccessful()
 
 class NullSys:
 
@@ -187,8 +203,35 @@ class NullSys:
 
 class NullDoctest:
 
-    def testmod(self, m=None):
-        pass
+    def DocTestSuite(self, m):
+        return unittest.TestSuite()
+
+class NullUnittest:
+
+    def __init__(self, successful):
+        self.successful = successful
+
+    def TestSuite(self):
+        return unittest.TestSuite()
+
+    def TextTestRunner(self):
+        return NullTestRunner(self.successful)
+
+class NullTestRunner:
+
+    def __init__(self, successful):
+        self.successful = successful
+
+    def run(self, suite):
+        return NullTestResult(self.successful)
+
+class NullTestResult:
+
+    def __init__(self, successful):
+        self.successful = successful
+
+    def wasSuccessful(self):
+        return self.successful
 
 if __name__ == "__main__":
     ZeroApp().run()
