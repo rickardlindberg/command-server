@@ -5,8 +5,7 @@ import subprocess
 import sys
 import unittest
 
-CS = __import__("command-server")
-Args = CS.Args
+from commandserver import Args
 
 class ZeroApp:
 
@@ -27,7 +26,7 @@ class ZeroApp:
 
     >>> ZeroApp.run_in_test_mode(args=['build'])
     DOCTEST_MODULE => 'zero'
-    DOCTEST_MODULE => 'command-server'
+    DOCTEST_MODULE => 'commandserver'
     TEST_RUN => None
 
     I exit with status of 1 if there are test failures:
@@ -64,7 +63,7 @@ class ZeroApp:
     def run(self):
         if self.args.get() == ["build"]:
             self.test_runner.add_doctest_module("zero")
-            self.test_runner.add_doctest_module("command-server")
+            self.test_runner.add_doctest_module("commandserver")
             if not self.test_runner.run():
                 sys.exit(1)
         else:

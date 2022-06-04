@@ -121,11 +121,6 @@ class Process:
     def __repr__(self):
         return f"Process({self.command})"
 
-class SysNull:
-
-    def __init__(self, arguments):
-        self.argv = [None]+arguments
-
 class Args:
 
     """
@@ -140,7 +135,7 @@ class Args:
 
     >>> subprocess.run([
     ...    "python", "-c",
-    ...    "import zero; print(zero.Args().get())",
+    ...    "import commandserver; print(commandserver.Args().get())",
     ...    "one", "two",
     ... ], stdout=subprocess.PIPE).stdout
     b"['one', 'two']\\n"
