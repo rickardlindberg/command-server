@@ -133,8 +133,12 @@ class Args:
 
     Real version gets arguments from Pythons module.
 
-    >>> Args().get() == sys.argv[1:]
-    True
+    >>> subprocess.run([
+    ...    "python", "-c",
+    ...    "import zero; print(zero.Args().get())",
+    ...    "one", "two",
+    ... ], stdout=subprocess.PIPE).stdout
+    b"['one', 'two']\\n"
     """
 
     @staticmethod
