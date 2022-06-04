@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import doctest
+import subprocess
 import sys
 
 class ZeroApp:
@@ -98,6 +99,14 @@ class Terminal(Observable):
 
     def print_line(self, text):
         """
+        I print a line to stdout:
+
+        >>> subprocess.run(["python", "-c", ";".join([
+        ...    "import zero",
+        ...    "zero.Terminal().print_line('line')",
+        ... ])], stdout=subprocess.PIPE).stdout
+        b'line\\n'
+
         I log the printed line.
 
         >>> events = EventCollector()
