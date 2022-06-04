@@ -10,11 +10,15 @@ class ZeroApp:
     """
     I am a tool to support zero friction development.
 
+    ## Usage
+
     I print usage when called with no arguments:
 
     >>> ZeroApp.run_in_test_mode(args=[])
     LINE => 'I am a tool to support zero friction development.'
     EXIT => 1
+
+    ## Building
 
     I run all tests when called with build argument:
 
@@ -23,14 +27,12 @@ class ZeroApp:
     DOCTEST_MODULE => 'command-server'
     TEST_RUN => None
 
-    >>> ZeroApp.run_in_test_mode(args=['build'], test_successful=False)
-    DOCTEST_MODULE => 'zero'
-    DOCTEST_MODULE => 'command-server'
-    TEST_RUN => None
-    EXIT => 1
+    I exit with status of 1 if there are test failures:
 
-    >>> isinstance(ZeroApp(), ZeroApp)
-    True
+    >>> ZeroApp.run_in_test_mode(
+    ...     args=['build'], test_successful=False
+    ... ).filter(["EXIT"])
+    EXIT => 1
     """
 
     @staticmethod
@@ -70,6 +72,13 @@ class EventCollector(list):
 
     def notify(self, event, message):
         self.append((event, message))
+
+    def filter(self, events):
+        filtered = EventCollector()
+        for x in self:
+            if x[0] in events:
+                filtered.append(x)
+        return filtered
 
     def __repr__(self):
         return "\n".join(f"{x} => {repr(y)}" for x, y in self)
