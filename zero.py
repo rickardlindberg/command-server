@@ -6,6 +6,8 @@ import sys
 class ZeroApp:
 
     """
+    I am a tool to support zero friction development.
+
     I print usage if called with no arguments:
 
     >>> ZeroApp.create_null().run()
@@ -16,21 +18,6 @@ class ZeroApp:
     >>> ZeroApp.create_null(args=['build']).run()
     selftest
     command-server
-
-    TODO: build
-        compile and/or lint, run tests, and report success or failure
-
-    TODO: watch
-        automatically run build when files change
-
-    TODO: integrate
-        run build in a production-like environment and integrate your code
-
-    TODO: deploy
-        runt integrate, then deploy the integration branch
-
-    TODO: rundev
-        run the software locally for manual review and testing
 
     >>> isinstance(ZeroApp(), ZeroApp)
     True
