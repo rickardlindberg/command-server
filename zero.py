@@ -40,7 +40,7 @@ class ZeroApp:
         events = EventCollector()
         terminal = Terminal.create_null()
         terminal.register_event_listener(events)
-        test_runner = TestRunner.create_null(successful=test_successful)
+        test_runner = TestRunner.create_null(run_was_successful=test_successful)
         test_runner.register_event_listener(events)
         app = ZeroApp(
             args=Args.create_null(args),
@@ -188,8 +188,8 @@ class TestRunner(Observable):
     """
 
     @staticmethod
-    def create_null(successful=True):
-        return TestRunner(unittest=NullUnittest(successful), doctest=NullDoctest())
+    def create_null(run_was_successful=True):
+        return TestRunner(unittest=NullUnittest(run_was_successful), doctest=NullDoctest())
 
     def __init__(self, unittest=unittest, doctest=doctest):
         Observable.__init__(self)
@@ -213,34 +213,39 @@ class NullSys:
 class NullDoctest:
 
     def DocTestSuite(self, m):
-        return unittest.TestSuite()
+        return NullTestSuite()
 
 class NullUnittest:
 
-    def __init__(self, successful):
-        self.successful = successful
+    def __init__(self, run_was_successful):
+        self.run_was_successful = run_was_successful
 
     def TestSuite(self):
-        return unittest.TestSuite()
+        return NullTestSuite()
 
     def TextTestRunner(self):
-        return NullTestRunner(self.successful)
+        return NullTestRunner(self.run_was_successful)
+
+class NullTestSuite:
+
+    def addTest(self, test):
+        pass
 
 class NullTestRunner:
 
-    def __init__(self, successful):
-        self.successful = successful
+    def __init__(self, run_was_successful):
+        self.run_was_successful = run_was_successful
 
     def run(self, suite):
-        return NullTestResult(self.successful)
+        return NullTestResult(self.run_was_successful)
 
 class NullTestResult:
 
-    def __init__(self, successful):
-        self.successful = successful
+    def __init__(self, was_successful):
+        self.was_successful = was_successful
 
     def wasSuccessful(self):
-        return self.successful
+        return self.was_successful
 
 if __name__ == "__main__":
     ZeroApp().run()
