@@ -11,14 +11,14 @@ class ZeroApp:
     I print usage when called with no arguments:
 
     >>> ZeroApp.run_in_test_mode(args=[])
-    TEXT => 'I am a tool to support zero friction development.\\n'
+    LINE => 'I am a tool to support zero friction development.'
     EXIT => 1
 
     I run selftest when called with build argument:
 
     >>> ZeroApp.run_in_test_mode(args=['build'])
-    TEXT => 'selftest\\n'
-    TEXT => 'command-server\\n'
+    LINE => 'selftest'
+    LINE => 'command-server'
 
     >>> isinstance(ZeroApp(), ZeroApp)
     True
@@ -51,7 +51,7 @@ class ZeroApp:
             __import__("command-server")
             self.doctest_runner.testmod(sys.modules["command-server"])
         else:
-            self.terminal.write("I am a tool to support zero friction development.")
+            self.terminal.print_line("I am a tool to support zero friction development.")
             sys.exit(1)
 
 class EventCollector(list):
@@ -96,20 +96,20 @@ class Terminal(Observable):
         Observable.__init__(self)
         self.stdout = stdout
 
-    def write(self, text):
+    def print_line(self, text):
         """
-        I log the text written.
+        I log the printed line.
 
         >>> events = EventCollector()
         >>> terminal = Terminal.create_null()
         >>> terminal.register_event_listener(events)
-        >>> terminal.write('hello')
+        >>> terminal.print_line('hello')
         >>> events
-        TEXT => 'hello\\n'
+        LINE => 'hello'
         """
-        x = f"{text}\n"
-        self.notify("TEXT", x)
-        self.stdout.write(x)
+        self.notify("LINE", text)
+        self.stdout.write(text)
+        self.stdout.write("\n")
         self.stdout.flush()
 
 class Args:
@@ -162,9 +162,9 @@ class DoctestRunner:
 
     def testmod(self, module=None):
         if module is None:
-            self.terminal.write("selftest")
+            self.terminal.print_line("selftest")
         else:
-            self.terminal.write("command-server")
+            self.terminal.print_line("command-server")
         return self.doctest.testmod(module)
 
 class NullSys:
