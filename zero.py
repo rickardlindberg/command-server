@@ -8,10 +8,11 @@ class ZeroApp:
     """
     I am a tool to support zero friction development.
 
-    I print usage if called with no arguments:
+    I print usage when called with no arguments:
 
     >>> ZeroApp.run_in_test_mode(args=[])
     TEXT => 'I am a tool to support zero friction development.\\n'
+    EXIT => 1
 
     I run selftest when called with build argument:
 
@@ -33,7 +34,10 @@ class ZeroApp:
             doctest_runner=DoctestRunner.create_null(terminal=terminal),
             terminal=terminal
         )
-        app.run()
+        try:
+            app.run()
+        except SystemExit as e:
+            events.notify("EXIT", e.code)
         return events
 
     def __init__(self, args=None, doctest_runner=None, terminal=None):
@@ -48,6 +52,7 @@ class ZeroApp:
             self.doctest_runner.testmod(sys.modules["command-server"])
         else:
             self.terminal.write("I am a tool to support zero friction development.")
+            sys.exit(1)
 
 class EventCollector(list):
 
