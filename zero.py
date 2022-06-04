@@ -10,29 +10,36 @@ class ZeroApp:
 
     I print usage if called with no arguments:
 
-    >>> ZeroApp.create_null().run()
-    I am a tool to support zero friction development.
+    >>> events = Events()
+    >>> ZeroApp.create_null(events=events).run()
+    >>> events
+    ('TEXT', 'I am a tool to support zero friction development.\\n')
 
     I run selftest when called with build argument:
 
-    >>> ZeroApp.create_null(args=['build']).run()
-    selftest
-    command-server
+    >>> events = Events()
+    >>> ZeroApp.create_null(args=['build'], events=events).run()
+    >>> events
+    ('TEXT', 'selftest\\n')
+    ('TEXT', 'command-server\\n')
 
     >>> isinstance(ZeroApp(), ZeroApp)
     True
     """
 
     @staticmethod
-    def create_null(args=[]):
+    def create_null(args=[], events=None):
+        terminal = events.capture(Terminal.create_null())
         return ZeroApp(
             args=Args.create_null(args),
-            doctest_runner=DoctestRunner.create_null()
+            doctest_runner=DoctestRunner.create_null(terminal=terminal),
+            terminal=terminal
         )
 
-    def __init__(self, args=None, doctest_runner=None):
+    def __init__(self, args=None, doctest_runner=None, terminal=None):
         self.args = args or Args()
         self.doctest_runner = doctest_runner or DoctestRunner()
+        self.terminal = terminal or Terminal()
 
     def run(self):
         if self.args.get() == ["build"]:
@@ -40,7 +47,69 @@ class ZeroApp:
             __import__("command-server")
             self.doctest_runner.testmod(sys.modules["command-server"])
         else:
-            print("I am a tool to support zero friction development.")
+            self.terminal.write("I am a tool to support zero friction development.")
+
+class Events(list):
+
+    def capture(self, observable):
+        observable.listen(self.notify)
+        return observable
+
+    def notify(self, type, text):
+        self.append((type, text))
+
+    def __repr__(self):
+        return "\n".join(repr(x) for x in self)
+
+class Observable:
+
+    def __init__(self):
+        self.event_listenters = []
+
+    def listen(self, listener):
+        self.event_listenters.append(listener)
+
+    def notify(self, type, event):
+        for notify in self.event_listenters:
+            notify(type, event)
+
+class NullStream:
+
+    def write(self, text):
+        pass
+
+    def flush(self):
+        pass
+
+class Terminal(Observable):
+
+    """
+    I represent a terminal to which text can be output.
+    """
+
+    @staticmethod
+    def create_null():
+        return Terminal(NullStream())
+
+    def __init__(self, stdout=sys.stdout):
+        Observable.__init__(self)
+        self.stdout = stdout
+
+    def write(self, text):
+        """
+        I log the text written.
+
+        >>> events = Events()
+        >>> terminal = Terminal.create_null()
+        >>> terminal.listen(events.notify)
+        >>> terminal.write('hello')
+        >>> events
+        ('TEXT', 'hello\\n')
+        """
+        x = f"{text}\n"
+        self.notify("TEXT", x)
+        self.stdout.write(x)
+        self.stdout.flush()
 
 class Args:
 
@@ -73,8 +142,7 @@ class DoctestRunner:
     """
     I am an infrastructure wrapper for Python's doctest module.
 
-    >>> DoctestRunner.create_null().testmod()
-    selftest
+    >>> DoctestRunner.create_null(Terminal()).testmod()
 
     >>> isinstance(DoctestRunner(), DoctestRunner)
     True
@@ -84,17 +152,18 @@ class DoctestRunner:
     """
 
     @staticmethod
-    def create_null():
-        return DoctestRunner(doctest=NullDoctest())
+    def create_null(terminal):
+        return DoctestRunner(doctest=NullDoctest(), terminal=terminal)
 
-    def __init__(self, doctest=doctest):
+    def __init__(self, doctest=doctest, terminal=Terminal()):
         self.doctest = doctest
+        self.terminal = terminal
 
     def testmod(self, module=None):
         if module is None:
-            print("selftest")
+            self.terminal.write("selftest")
         else:
-            print("command-server")
+            self.terminal.write("command-server")
         return self.doctest.testmod(module)
 
 class NullSys:
