@@ -37,6 +37,21 @@ class ZeroApp:
     EXIT => 1
     """
 
+    def __init__(self, args=None, test_runner=None, terminal=None):
+        self.args = args or Args()
+        self.test_runner = test_runner or TestRunner()
+        self.terminal = terminal or Terminal()
+
+    def run(self):
+        if self.args.get() == ["build"]:
+            self.test_runner.add_doctest_module("zero")
+            self.test_runner.add_doctest_module("commandserver")
+            if not self.test_runner.run():
+                sys.exit(1)
+        else:
+            self.terminal.print_line("I am a tool to support zero friction development.")
+            sys.exit(1)
+
     @staticmethod
     def run_in_test_mode(args=[], test_successful=True):
         events = EventCollector()
@@ -54,21 +69,6 @@ class ZeroApp:
         except SystemExit as e:
             events.notify("EXIT", e.code)
         return events
-
-    def __init__(self, args=None, test_runner=None, terminal=None):
-        self.args = args or Args()
-        self.test_runner = test_runner or TestRunner()
-        self.terminal = terminal or Terminal()
-
-    def run(self):
-        if self.args.get() == ["build"]:
-            self.test_runner.add_doctest_module("zero")
-            self.test_runner.add_doctest_module("commandserver")
-            if not self.test_runner.run():
-                sys.exit(1)
-        else:
-            self.terminal.print_line("I am a tool to support zero friction development.")
-            sys.exit(1)
 
 class EventCollector(list):
 
@@ -97,23 +97,11 @@ class Observable:
         for listener in self.event_listenters:
             listener.notify(event, message)
 
-class NullStream:
-
-    def write(self, text):
-        pass
-
-    def flush(self):
-        pass
-
 class Terminal(Observable):
 
     """
     I represent a terminal to which text can be output.
     """
-
-    @staticmethod
-    def create_null():
-        return Terminal(NullStream())
 
     def __init__(self, stdout=sys.stdout):
         Observable.__init__(self)
@@ -143,6 +131,15 @@ class Terminal(Observable):
         self.stdout.write("\n")
         self.stdout.flush()
 
+    @staticmethod
+    def create_null():
+        class NullStream:
+            def write(self, text):
+                pass
+            def flush(self):
+                pass
+        return Terminal(NullStream())
+
 class TestRunner(Observable):
 
     """
@@ -159,10 +156,6 @@ class TestRunner(Observable):
     TEST_RUN => None
     """
 
-    @staticmethod
-    def create_null(run_was_successful=True):
-        return TestRunner(unittest=NullUnittest(run_was_successful), doctest=NullDoctest())
-
     def __init__(self, unittest=unittest, doctest=doctest):
         Observable.__init__(self)
         self.unittest = unittest
@@ -177,42 +170,29 @@ class TestRunner(Observable):
         self.notify("TEST_RUN", None)
         return self.unittest.TextTestRunner().run(self.suite).wasSuccessful()
 
-class NullDoctest:
-
-    def DocTestSuite(self, m):
-        return NullTestSuite()
-
-class NullUnittest:
-
-    def __init__(self, run_was_successful):
-        self.run_was_successful = run_was_successful
-
-    def TestSuite(self):
-        return NullTestSuite()
-
-    def TextTestRunner(self):
-        return NullTestRunner(self.run_was_successful)
-
-class NullTestSuite:
-
-    def addTest(self, test):
-        pass
-
-class NullTestRunner:
-
-    def __init__(self, run_was_successful):
-        self.run_was_successful = run_was_successful
-
-    def run(self, suite):
-        return NullTestResult(self.run_was_successful)
-
-class NullTestResult:
-
-    def __init__(self, was_successful):
-        self.was_successful = was_successful
-
-    def wasSuccessful(self):
-        return self.was_successful
+    @staticmethod
+    def create_null(run_was_successful=True):
+        class NullUnittest:
+            def TestSuite(self):
+                return NullTestSuite()
+            def TextTestRunner(self):
+                return NullTestRunner()
+        class NullTestRunner:
+            def run(self, suite):
+                return NullTestResult()
+        class NullTestResult:
+            def wasSuccessful(self):
+                return run_was_successful
+        class NullDoctest:
+            def DocTestSuite(self, m):
+                return NullTestSuite()
+        class NullTestSuite:
+            def addTest(self, test):
+                pass
+        return TestRunner(
+            unittest=NullUnittest(),
+            doctest=NullDoctest()
+        )
 
 if __name__ == "__main__":
     ZeroApp().run()

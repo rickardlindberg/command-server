@@ -84,10 +84,6 @@ class ProcessFactory:
     True
     """
 
-    @staticmethod
-    def create_null():
-        return ProcessFactory(NullSubprocess())
-
     def __init__(self, subprocess=subprocess):
         self.last_spwaned = None
         self.subprocess = subprocess
@@ -99,15 +95,15 @@ class ProcessFactory:
     def get_last_spawned(self):
         return self.last_spwaned
 
-class NullSubprocess:
-
-    def Popen(self, command):
-        return NullPopen()
-
-class NullPopen:
-
-    def __init__(self):
-        self.pid = None
+    @staticmethod
+    def create_null():
+        class NullSubprocess:
+            def Popen(self, command):
+                return NullPopen()
+        class NullPopen:
+            def __init__(self):
+                self.pid = None
+        return ProcessFactory(NullSubprocess())
 
 class Process:
 
@@ -141,20 +137,18 @@ class Args:
     b"['one', 'two']\\n"
     """
 
-    @staticmethod
-    def create_null(args):
-        return Args(NullSys(argv=[None]+args))
-
     def __init__(self, sys=sys):
         self.sys = sys
 
     def get(self):
         return self.sys.argv[1:]
 
-class NullSys:
-
-    def __init__(self, argv):
-        self.argv = argv
+    @staticmethod
+    def create_null(args):
+        class NullSys:
+            def __init__(self, argv):
+                self.argv = argv
+        return Args(NullSys(argv=[None]+args))
 
 if __name__ == "__main__":
     CommandServerApp().run()
