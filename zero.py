@@ -5,6 +5,9 @@ import subprocess
 import sys
 import unittest
 
+CS = __import__("command-server")
+Args = CS.Args
+
 class ZeroApp:
 
     """
@@ -141,36 +144,6 @@ class Terminal(Observable):
         self.stdout.write("\n")
         self.stdout.flush()
 
-class Args:
-
-    """
-    I am an infrastructure wrapper for Python's sys.argv.
-
-    Null version simulates arguments:
-
-    >>> Args.create_null(['hello']).get()
-    ['hello']
-
-    Real version gets arguments from Pythons module.
-
-    >>> subprocess.run([
-    ...    "python", "-c",
-    ...    "import zero; print(zero.Args().get())",
-    ...    "one", "two",
-    ... ], stdout=subprocess.PIPE).stdout
-    b"['one', 'two']\\n"
-    """
-
-    @staticmethod
-    def create_null(args):
-        return Args(NullSys(argv=[None]+args))
-
-    def __init__(self, sys=sys):
-        self.sys = sys
-
-    def get(self):
-        return self.sys.argv[1:]
-
 class TestRunner(Observable):
 
     """
@@ -204,11 +177,6 @@ class TestRunner(Observable):
     def run(self):
         self.notify("TEST_RUN", None)
         return self.unittest.TextTestRunner().run(self.suite).wasSuccessful()
-
-class NullSys:
-
-    def __init__(self, argv):
-        self.argv = argv
 
 class NullDoctest:
 

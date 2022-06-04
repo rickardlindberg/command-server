@@ -37,7 +37,7 @@ import subprocess
 class CommandServerApp:
 
     """
-    >>> arguments = ProgramArguments.create_null(["echo", "hello"])
+    >>> arguments = Args.create_null(["echo", "hello"])
     >>> process_factory = ProcessFactory.create_null()
     >>> app = CommandServerApp(arguments, process_factory)
 
@@ -55,35 +55,11 @@ class CommandServerApp:
     """
 
     def __init__(self, arguments=None, process_factory=None):
-        self.arguments = arguments or ProgramArguments()
+        self.arguments = arguments or Args()
         self.process_factory = process_factory or ProcessFactory()
 
     def run(self):
         self.process_factory.spawn(self.arguments.get())
-
-class ProgramArguments:
-
-    """
-    Test null version:
-
-    >>> ProgramArguments.create_null(['echo', 'hello']).get()
-    ['echo', 'hello']
-
-    Test real version:
-
-    >>> ProgramArguments().get() == sys.argv[1:]
-    True
-    """
-
-    @staticmethod
-    def create_null(arguments):
-        return ProgramArguments(SysNull(arguments))
-
-    def __init__(self, sys=sys):
-        self.sys = sys
-
-    def get(self):
-        return self.sys.argv[1:]
 
 class ProcessFactory:
 
@@ -149,6 +125,41 @@ class SysNull:
 
     def __init__(self, arguments):
         self.argv = [None]+arguments
+
+class Args:
+
+    """
+    I am an infrastructure wrapper for Python's sys.argv.
+
+    Null version simulates arguments:
+
+    >>> Args.create_null(['hello']).get()
+    ['hello']
+
+    Real version gets arguments from Pythons module.
+
+    >>> subprocess.run([
+    ...    "python", "-c",
+    ...    "import zero; print(zero.Args().get())",
+    ...    "one", "two",
+    ... ], stdout=subprocess.PIPE).stdout
+    b"['one', 'two']\\n"
+    """
+
+    @staticmethod
+    def create_null(args):
+        return Args(NullSys(argv=[None]+args))
+
+    def __init__(self, sys=sys):
+        self.sys = sys
+
+    def get(self):
+        return self.sys.argv[1:]
+
+class NullSys:
+
+    def __init__(self, argv):
+        self.argv = argv
 
 if __name__ == "__main__":
     CommandServerApp().run()
