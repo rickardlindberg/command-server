@@ -11,13 +11,13 @@ class ZeroApp:
     I print usage if called with no arguments:
 
     >>> ZeroApp.run_in_test_mode(args=[])
-    ('TEXT', 'I am a tool to support zero friction development.\\n')
+    TEXT => 'I am a tool to support zero friction development.\\n'
 
     I run selftest when called with build argument:
 
     >>> ZeroApp.run_in_test_mode(args=['build'])
-    ('TEXT', 'selftest\\n')
-    ('TEXT', 'command-server\\n')
+    TEXT => 'selftest\\n'
+    TEXT => 'command-server\\n'
 
     >>> isinstance(ZeroApp(), ZeroApp)
     True
@@ -55,7 +55,7 @@ class Events(list):
         self.append((type, text))
 
     def __repr__(self):
-        return "\n".join(repr(x) for x in self)
+        return "\n".join(f"{x} => {repr(y)}" for x, y in self)
 
 class Observable:
 
@@ -100,7 +100,7 @@ class Terminal(Observable):
         >>> terminal.listen(events.notify)
         >>> terminal.write('hello')
         >>> events
-        ('TEXT', 'hello\\n')
+        TEXT => 'hello\\n'
         """
         x = f"{text}\n"
         self.notify("TEXT", x)
