@@ -10,12 +10,12 @@ class ZeroApp:
 
     I print usage if called with no arguments:
 
-    >>> ZeroApp.test_run_and_capture_events(args=[])
+    >>> ZeroApp.run_in_test_mode(args=[])
     ('TEXT', 'I am a tool to support zero friction development.\\n')
 
     I run selftest when called with build argument:
 
-    >>> ZeroApp.test_run_and_capture_events(args=['build'])
+    >>> ZeroApp.run_in_test_mode(args=['build'])
     ('TEXT', 'selftest\\n')
     ('TEXT', 'command-server\\n')
 
@@ -24,7 +24,7 @@ class ZeroApp:
     """
 
     @staticmethod
-    def test_run_and_capture_events(args=[]):
+    def run_in_test_mode(args=[]):
         events = Events()
         terminal = Terminal.create_null()
         terminal.listen(events.notify)
