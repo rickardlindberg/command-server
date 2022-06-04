@@ -10,16 +10,12 @@ class ZeroApp:
 
     I print usage if called with no arguments:
 
-    >>> events = Events()
-    >>> ZeroApp.create_null(events=events).run()
-    >>> events
+    >>> ZeroApp.run_and_capture_events(args=[])
     ('TEXT', 'I am a tool to support zero friction development.\\n')
 
     I run selftest when called with build argument:
 
-    >>> events = Events()
-    >>> ZeroApp.create_null(args=['build'], events=events).run()
-    >>> events
+    >>> ZeroApp.run_and_capture_events(args=['build'])
     ('TEXT', 'selftest\\n')
     ('TEXT', 'command-server\\n')
 
@@ -28,13 +24,17 @@ class ZeroApp:
     """
 
     @staticmethod
-    def create_null(args=[], events=None):
-        terminal = events.capture(Terminal.create_null())
-        return ZeroApp(
+    def run_and_capture_events(args=[]):
+        events = Events()
+        terminal = Terminal.create_null()
+        terminal.listen(events.notify)
+        app = ZeroApp(
             args=Args.create_null(args),
             doctest_runner=DoctestRunner.create_null(terminal=terminal),
             terminal=terminal
         )
+        app.run()
+        return events
 
     def __init__(self, args=None, doctest_runner=None, terminal=None):
         self.args = args or Args()
@@ -50,10 +50,6 @@ class ZeroApp:
             self.terminal.write("I am a tool to support zero friction development.")
 
 class Events(list):
-
-    def capture(self, observable):
-        observable.listen(self.notify)
-        return observable
 
     def notify(self, type, text):
         self.append((type, text))
