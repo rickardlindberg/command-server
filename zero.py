@@ -101,10 +101,10 @@ class Terminal(Observable):
         """
         I print a line to stdout:
 
-        >>> subprocess.run(["python", "-c", ";".join([
-        ...    "import zero",
-        ...    "zero.Terminal().print_line('line')",
-        ... ])], stdout=subprocess.PIPE).stdout
+        >>> subprocess.run([
+        ...    "python", "-c",
+        ...    "import zero; zero.Terminal().print_line('line')",
+        ... ], stdout=subprocess.PIPE).stdout
         b'line\\n'
 
         I log the printed line.
