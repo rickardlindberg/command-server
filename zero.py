@@ -25,9 +25,9 @@ class ZeroApp:
 
     @staticmethod
     def run_in_test_mode(args=[]):
-        events = Events()
+        events = EventCollector()
         terminal = Terminal.create_null()
-        terminal.listen(events.notify)
+        terminal.register_event_listener(events)
         app = ZeroApp(
             args=Args.create_null(args),
             doctest_runner=DoctestRunner.create_null(terminal=terminal),
@@ -49,10 +49,10 @@ class ZeroApp:
         else:
             self.terminal.write("I am a tool to support zero friction development.")
 
-class Events(list):
+class EventCollector(list):
 
-    def notify(self, type, text):
-        self.append((type, text))
+    def notify(self, event, message):
+        self.append((event, message))
 
     def __repr__(self):
         return "\n".join(f"{x} => {repr(y)}" for x, y in self)
@@ -62,12 +62,12 @@ class Observable:
     def __init__(self):
         self.event_listenters = []
 
-    def listen(self, listener):
+    def register_event_listener(self, listener):
         self.event_listenters.append(listener)
 
-    def notify(self, type, event):
-        for notify in self.event_listenters:
-            notify(type, event)
+    def notify(self, event, message):
+        for listener in self.event_listenters:
+            listener.notify(event, message)
 
 class NullStream:
 
@@ -95,9 +95,9 @@ class Terminal(Observable):
         """
         I log the text written.
 
-        >>> events = Events()
+        >>> events = EventCollector()
         >>> terminal = Terminal.create_null()
-        >>> terminal.listen(events.notify)
+        >>> terminal.register_event_listener(events)
         >>> terminal.write('hello')
         >>> events
         TEXT => 'hello\\n'
